@@ -1,0 +1,18 @@
+[project]
+name = "cubecoach"
+version = "0.1.0"
+authors = [{name = "Your Name"}]
+description = "CubeCoach — computer vision assistant to solve Rubik's Cubes"
+readme = "README.md"
+requires-python = ">=3.8"
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+opencv-python = "*"
+numpy = "*"
+kociemba = "*"
+PySimpleGUI = "*"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"

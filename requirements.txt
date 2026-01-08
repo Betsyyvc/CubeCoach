@@ -1,0 +1,6 @@
+opencv-python
+numpy
+kociemba
+imutils
+PySimpleGUI
+pytest
