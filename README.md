@@ -153,9 +153,11 @@ Instructions while scanning:
 
 - Point the camera at one cube face and press the key for that face: `u`, `r`, `f`, `d`, `l`, `b` corresponding to Up/Right/Front/Down/Left/Back.
 - The scanner will detect the face, warp it to a top-down view, sample the 3×3 sticker colors and map them using your calibration.
-- Repeat until you have scanned all 6 faces; the program will print the assembled 54-character facelet string (U R F D L B order).
+- After pressing a face key, a **preview window** will appear showing the 3×3 *raw* color samples; press **`y`** to accept and store the raw samples for that face or **`n`** to reject and try again.
+- After you have accepted all 6 faces the scanner will automatically compute a **per-camera calibration** from the collected faces (center sticker heuristic + median fallback), save it to `cubecoach/vision/calibration.json`, remap all stickers using perceptual LAB distances, and save the final face images and mappings under `cubecoach/vision/scans/`.
+- Repeat scanning if any face looks incorrect — you can re-scan a face by pressing its key again before the 6 faces are complete.
 
-Note: if mapping fails on any sticker (missing calibration), run `--calibrate` first.
+Note: if you already have a calibration file, you can still use `--calibrate` to fine-tune it manually; the automatic calibration is a convenience when you don't have one yet.
 
 
 ### "Failed to build wheel for kociemba" (Windows)

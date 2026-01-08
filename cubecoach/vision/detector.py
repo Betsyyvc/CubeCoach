@@ -1,7 +1,11 @@
 """Cube face detection and sticker grid extraction."""
 import cv2
 import numpy as np
+import os
 from typing import List, Tuple
+
+# Enable debug sampling output by setting environment variable CUBECOACH_DEBUG=1
+DEBUG_SCAN = os.getenv("CUBECOACH_DEBUG", "") != ""
 
 
 def find_largest_quad(contours):
@@ -72,16 +76,57 @@ def get_sticker_regions(warp: np.ndarray, grid: int = 3) -> List[Tuple[int, int,
     return regions
 
 
+def normalize_warp_for_sampling(warp: np.ndarray) -> np.ndarray:
+    """Apply simple gray-world white balance and CLAHE to improve sampling robustness.
+
+    - Gray-world: scale each channel so their means match the global mean
+    - CLAHE on L channel in LAB to improve contrast
+    """
+    img = warp.copy().astype('float32')
+    # Gray-world white balance
+    means = img.reshape(-1, 3).mean(axis=0)
+    if np.any(means == 0):
+        return warp
+    mean_global = means.mean()
+    scales = mean_global / means
+    balanced = np.clip(img * scales, 0, 255).astype('uint8')
+
+    # CLAHE on L channel
+    lab = cv2.cvtColor(balanced, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    l2 = clahe.apply(l)
+    lab2 = cv2.merge((l2, a, b))
+    final = cv2.cvtColor(lab2, cv2.COLOR_LAB2BGR)
+    return final
+
+
 def sample_regions_colors(warp: np.ndarray, regions: List[Tuple[int, int, int, int]]) -> List[Tuple[int, int, int]]:
-    """Sample average BGR color from each region and return list in row-major order."""
+    """Sample average BGR color from each region and return list in row-major order.
+
+    Applies normalization before sampling for more robust color estimates.
+    """
+    norm = normalize_warp_for_sampling(warp)
     colors = []
     for (x, y, w, h) in regions:
-        roi = warp[y : y + h, x : x + w]
+        roi = norm[y : y + h, x : x + w]
         if roi.size == 0:
             colors.append((0, 0, 0))
             continue
-        avg = cv2.mean(roi)[:3]
+        # take central area to avoid borders
+        hh, ww = roi.shape[:2]
+        cy0 = hh // 4
+        cx0 = ww // 4
+        central = roi[cy0:cy0 + hh // 2, cx0:cx0 + ww // 2]
+        avg = cv2.mean(central)[:3]
         colors.append(tuple(map(int, avg)))
+    if DEBUG_SCAN:
+        try:
+            print("[DEBUG] sample_regions_colors -> ")
+            print("  regions:", regions)
+            print("  colors:", colors)
+        except Exception:
+            pass
     return colors
 
 
